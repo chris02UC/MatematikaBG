@@ -25,7 +25,7 @@ class DrawViewModel(application: Application) : AndroidViewModel(application) {
 
 
     private val tflite: Interpreter by lazy {
-        val afd = getApplication<Application>().assets.openFd("mnist.tflite")
+        val afd = getApplication<Application>().assets.openFd("handwritelogic.tflite")
         val channel = afd.createInputStream().channel
         val buf = channel.map(
             java.nio.channels.FileChannel.MapMode.READ_ONLY,
