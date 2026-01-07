@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MatematikaBersamaGaruda"
+rootProject.name = "MatematikaBG"
 include(":app")
  
