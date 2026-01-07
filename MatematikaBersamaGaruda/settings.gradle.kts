@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DEIMOMOIMAIN"
+rootProject.name = "MatematikaBersamaGaruda"
 include(":app")
  
