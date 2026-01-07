@@ -43,18 +43,6 @@ fun VersusViewDrawEB(
     modifier: Modifier = Modifier,
     drawVm: DrawViewModel = viewModel()
 ) {
-    val context = LocalContext.current
-    DisposableEffect(Unit) {
-        val mediaPlayer = MediaPlayer.create(context, R.raw.unwelcomeschool_bluearchive).apply {
-            isLooping = true
-            setVolume(1f, 1f)
-            start()
-        }
-        onDispose {
-            mediaPlayer.stop()
-            mediaPlayer.release()
-        }
-    }
     val state      = drawVm.uiState
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
 

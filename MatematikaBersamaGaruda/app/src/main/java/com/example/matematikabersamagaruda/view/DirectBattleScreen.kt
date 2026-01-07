@@ -20,33 +20,6 @@ fun DirectBattleScreen(
     level: Int,
     viewModel: DirectBattleViewModel = viewModel()
 ) {
-    val context = LocalContext.current
-
-    // Changed MediaPlayer initialization to match touchscreen views
-    DisposableEffect(Unit) {
-        val mediaPlayer = MediaPlayer.create(context, R.raw.unwelcomeschool_bluearchive)?.apply {
-            isLooping = true
-            setVolume(1.0f, 1.0f) // Set your desired volume (e.g., 1.0f for full)
-            try {
-                start()
-            } catch (e: IllegalStateException) {
-                // Optional: Log e.message or handle error
-            }
-        }
-
-        onDispose {
-            mediaPlayer?.let {
-                try {
-                    if (it.isPlaying) {
-                        it.stop()
-                    }
-                } catch (e: IllegalStateException) {
-                    // Optional: Log e.message or handle error
-                }
-                it.release()
-            }
-        }
-    }
 
     LaunchedEffect(Unit) { // Keep this as it was for difficulty setting
         viewModel.setDifficulty(level)

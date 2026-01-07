@@ -19,22 +19,6 @@ fun DirectBattleDrawScreen(
     drawVm: DrawViewModel = viewModel(),
     modifier: Modifier = Modifier
 ) {
-//    val context = LocalContext.current
-
-//    val mediaPlayer = remember {
-//        MediaPlayer.create(context, R.raw.unwelcomeschool_bluearchive).apply {
-//            isLooping = true
-//            setVolume(0.5f, 0.5f)
-//            start()
-//        }
-//    }
-
-//    DisposableEffect(Unit) {
-//        onDispose {
-//            mediaPlayer.stop()
-//            mediaPlayer.release()
-//        }
-//    }
         LaunchedEffect(level) {
               directVm.setDifficulty(level)
               directVm.restart()

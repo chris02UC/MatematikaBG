@@ -121,52 +121,97 @@ class DrawViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun preprocess(strokes: List<List<Pair<Float, Float>>>): Bitmap {
-        // 1) Render strokes at 28×28
-        val raw28 = convertStrokesToBitmap(strokes)
+        // 1) Render strokes at High Resolution (500x500) to preserve detail
+        // FIX: We now use the full 500x500 bitmap for analysis instead of the tiny 28x28 version
+        val rawHighRes = convertStrokesToBitmap(strokes)
 
-        // 2) Find bounding box of white pixels
-        var minX = 28; var minY = 28
-        var maxX = 0;  var maxY = 0
-        for (y in 0 until 28) for (x in 0 until 28) {
-            if (raw28.getPixel(x,y) == AndroidColor.WHITE) {
-                minX = min(minX, x)
-                minY = min(minY, y)
-                maxX = max(maxX, x)
-                maxY = max(maxY, y)
+        // 2) Find bounding box of white pixels on the HIGH RES bitmap
+        var minX = rawHighRes.width
+        var minY = rawHighRes.height
+        var maxX = 0
+        var maxY = 0
+
+        for (y in 0 until rawHighRes.height) {
+            for (x in 0 until rawHighRes.width) {
+                // Check if pixel is not black (contains some drawing)
+                // Using simple threshold or check for WHITE
+                if (rawHighRes.getPixel(x, y) != AndroidColor.BLACK) {
+                    minX = min(minX, x)
+                    minY = min(minY, y)
+                    maxX = max(maxX, x)
+                    maxY = max(maxY, y)
+                }
             }
         }
-        // If nothing drawn, return as‑is
-        if (maxX < minX || maxY < minY) return raw28
 
-        // 3) Crop
+        // If nothing drawn, return a blank 28x28 bitmap
+        if (maxX < minX || maxY < minY) {
+            return Bitmap.createScaledBitmap(rawHighRes, 28, 28, true)
+        }
+
+        // 3) Crop to bounding box (High Resolution)
         val w = maxX - minX + 1
         val h = maxY - minY + 1
-        val cropped = Bitmap.createBitmap(raw28, minX, minY, w, h)
+        val cropped = Bitmap.createBitmap(rawHighRes, minX, minY, w, h)
 
-        // 4) Scale so longer side = 20px
-        val scale = 20f / max(w, h)
+        // 4) Scale so longer side = 20px (preserving aspect ratio)
+        // This matches the standard MNIST preprocessing logic
+        val targetSize = 20f
+        val scale = targetSize / max(w, h)
         val newW = (w * scale).toInt()
         val newH = (h * scale).toInt()
+
+        // Use filter=true for smooth downscaling
         val resized = Bitmap.createScaledBitmap(cropped, newW, newH, true)
 
-        // 5) Center in 28×28 black
+        // 5) Center by Center of Mass (COM) in 28x28 black canvas
+        // FIX: Instead of geometric centering, we align the Center of Mass to the center (14,14)
         val output = Bitmap.createBitmap(28, 28, Bitmap.Config.ARGB_8888)
         val canvas = AndroidCanvas(output).apply { drawColor(AndroidColor.BLACK) }
-        val left = (28 - newW) / 2f
-        val top  = (28 - newH) / 2f
-        canvas.drawBitmap(resized, left, top, null)
+
+        // Calculate Center of Mass
+        var sumX = 0f
+        var sumY = 0f
+        var totalMass = 0f
+
+        for (y in 0 until newH) {
+            for (x in 0 until newW) {
+                val pixel = resized.getPixel(x, y)
+                // Calculate brightness (0.0 to 255.0)
+                val mass = (AndroidColor.red(pixel) + AndroidColor.green(pixel) + AndroidColor.blue(pixel)) / 3f
+                sumX += x * mass
+                sumY += y * mass
+                totalMass += mass
+            }
+        }
+
+        var drawLeft = (28 - newW) / 2f
+        var drawTop = (28 - newH) / 2f
+
+        if (totalMass > 0) {
+            val comX = sumX / totalMass
+            val comY = sumY / totalMass
+
+            // We want the COM to be at (14, 14)
+            // Position = Center(14) - COM_Relative
+            drawLeft = 14f - comX
+            drawTop = 14f - comY
+        }
+
+        canvas.drawBitmap(resized, drawLeft, drawTop, null)
 
         return output
     }
 
+    // FIX: Removed the downscaling to 28x28 at the end. Now returns the full 500x500 bitmap.
     private fun convertStrokesToBitmap(strokes: List<List<Pair<Float,Float>>>): Bitmap {
         val bigSize = 500
         val bigBmp = Bitmap.createBitmap(bigSize, bigSize, Bitmap.Config.ARGB_8888)
         val bigCanvas = AndroidCanvas(bigBmp)
-        bigCanvas.drawColor(Color.BLACK)
+        bigCanvas.drawColor(AndroidColor.BLACK)
 
         val paint = Paint().apply {
-            color = Color.WHITE
+            color = AndroidColor.WHITE
             style = Paint.Style.STROKE
             strokeWidth = 40f
             strokeCap = Paint.Cap.ROUND
@@ -182,8 +227,7 @@ class DrawViewModel(application: Application) : AndroidViewModel(application) {
             bigCanvas.drawPath(path, paint)
         }
 
-        // downsample to 28×28
-        return Bitmap.createScaledBitmap(bigBmp, 28, 28, true)
+        return bigBmp // Return raw 500x500 bitmap
     }
 
 //    private fun convertStrokesToBitmap(strokes: List<List<Pair<Float,Float>>>): Bitmap {
